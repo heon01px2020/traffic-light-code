@@ -32,21 +32,26 @@ running_test_performance = 0
 total = 0
 correct = 0
 with torch.no_grad():
-    for i, (images, labels) in enumerate(dataloader):
+    for i, data in enumerate(dataloader):
+        images = data['image'].type(torch.FloatTensor)
+        mode = data['mode']
+        points = data['points']
         if cuda_available:
             images = images.cuda()
-            labels = labels.cuda()
+            mode = data.cuda()
+            points = data.cuda()
 
         pred_classes, pred_direc = net(images)
         _, predicted = torch.max(pred_classes, 1)
-        if(predicted == labels['mode']): correct += 1
+        if(predicted == mode): correct += 1
         
-        running_loss += loss_fn(pred_classes, pred_direc, labels)
-        running_test_performance += calculate_performance(pred_direc, labels['points'])
+        loss, MSE, cross_entropy =  loss_fn(pred_classes, pred_direc, points, mode)
+        running_loss += loss
+        #running_test_performance += calculate_performance(pred_direc, points)
         total += 1
 
-print("average loss: " + running_loss/total)
-print("average performace: " + running_test_performance/total)
-print("accuracy: " + correct/total*100 + "%")
+print("average loss: " + str(running_loss/total))
+print("average performace: " + str(running_test_performance/total))
+print("accuracy: " + str(correct/total*100) + "%")
 
 

@@ -97,7 +97,7 @@ class MyNet(nn.Module):
 
         # classifier for lights
         self.classifier_light = nn.Sequential(
-            nn.Dropout(0.5),
+            nn.Dropout(0.4),
             nn.Linear(self.last_channel, 300),
             nn.Linear(300, 6),
             nn.Softmax()

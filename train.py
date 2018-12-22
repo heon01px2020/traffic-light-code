@@ -16,10 +16,10 @@ from loss import my_loss
 cuda_available = torch.cuda.is_available()
 
 BATCH_SIZE = 32
-MAX_EPOCHS = 1000
+MAX_EPOCHS = 400
 INIT_LR = 0.1
 WEIGHT_DECAY = 0.00001
-LR_DROP_MILESTONES = [50,150,250,350,450,550,650,750,850,950]
+LR_DROP_MILESTONES = [30,80,130,200,400,650,900]
 train_file_root = '/home/mv01/Desktop/ISEF 2018/rewritten files/train_file_'
 valid_file_root = '/home/mv01/Desktop/ISEF 2018/rewritten files/valid_file_'
 image_directory = '/home/mv01/Desktop/ISEF 2018/resized photos'
@@ -47,8 +47,8 @@ for i in range(1):
         
     loss_fn = my_loss
     
-    #optimizer = torch.optim.SGD(net.parameters(), lr = INIT_LR, momentum = 0.9)
-    optimizer = torch.optim.Adam(net.parameters(), lr = INIT_LR, weight_decay = WEIGHT_DECAY)
+    optimizer = torch.optim.SGD(net.parameters(), lr = INIT_LR, momentum = 0.9, weight_decay = WEIGHT_DECAY)
+    #optimizer = torch.optim.Adam(net.parameters(), lr = INIT_LR, weight_decay = WEIGHT_DECAY)
     lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, LR_DROP_MILESTONES)
     
     #for graphing
@@ -99,8 +99,8 @@ for i in range(1):
             running_loss_cross_entropy += cross_entropy
             #running_performance += performance
 
-            if j % 9 == 8:
-                print('[%d, %5d] loss: %.3f' % (epoch + 1, (j + 1)*32, running_loss /9))
+            if j % 81 == 80:
+                print('[%d, %5d] loss: %.3f' % (epoch + 1, (j + 1)*32, running_loss /81))
                 print('mse: ' + str(running_loss_MSE/(j+1)))
                 print('cross_entropy: ' + str(running_loss_cross_entropy/(j+1)))
                 print('epoch: ' + str(epoch+1) + " accuracy: " + str(train_correct/train_total/32))
@@ -126,6 +126,8 @@ for i in range(1):
         net.eval()
         
         val_running_loss = 0
+        val_mse_loss = 0
+        val_ce_loss = 0
         #val_performance_total = 0
         correct = 0
         total = 0
@@ -147,14 +149,24 @@ for i in range(1):
                 lots, MSE, cross_entropy = loss_fn(pred_classes, pred_direc, points, mode)
                 val_running_loss += loss
                 #val_performance_total += direction_performance(pred_direc, points)
+                val_mse_loss += MSE
+                val_ce_loss += cross_entropy
             
     
             print("epoch: " + str(epoch+1) +" accuracy over " + str(total) + " validation images: " + str(100*correct/total) + "%")
             valid_accuracies.append(100*correct/total)
             print("average validation loss: " + str(val_running_loss/total))
+            print("average validation mse loss: " + str(val_mse_loss/total))
+            print("average validation cross-entropy loss: " + str(val_ce_loss/total))
             valid_losses.append(val_running_loss/total)
             #print("average direction performance: " +str(val_performance_total/total))
             #valid_performances.append(val_performance_total/total)
+            
+            if epoch%100 == 99:
+                plt.title('train and validation loss')
+                plt.plot(train_losses)
+                plt.plot(valid_losses)
+            
             if epoch == 300:
                 torch.save(net.state_dict(), MODEL_SAVE_PATH + '_epoch_300_weights')
     
@@ -162,14 +174,17 @@ for i in range(1):
     plt.title('train vs validation loss')
     plt.plot(valid_losses)
     plt.plot(train_losses)
+    plt.savefig('/home/mv01/Desktop/ISEF 2018/train_val_loss')
     plt.show()
     plt.title('difference in mse and cross-entropy')
     plt.plot(train_losses_MSE)
     plt.plot(train_losses_cross_entropy)
+    plt.savefig('/home/mv01/Desktop/ISEF 2018/mse_ce')
     plt.show()
     plt.title('train vs validation accuracies')
     plt.plot(valid_accuracies)
     plt.plot(train_accuracies)
+    plt.savefig('/home/mv01/Desktop/ISEF 2018/train_val_accuracy')
     plt.show()
     #plt.plot(valid_performances)
     #plt.show()
