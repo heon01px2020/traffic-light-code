@@ -17,13 +17,13 @@ cuda_available = torch.cuda.is_available()
 
 BATCH_SIZE = 32
 MAX_EPOCHS = 400
-INIT_LR = 0.1
-WEIGHT_DECAY = 0.00001
-LR_DROP_MILESTONES = [30,80,130,200,400,650,900]
+INIT_LR = 0.001
+WEIGHT_DECAY = 0.00005
+LR_DROP_MILESTONES = [100,300,500,700,900]
 train_file_root = '/home/mv01/Desktop/ISEF 2018/rewritten files/train_file_'
 valid_file_root = '/home/mv01/Desktop/ISEF 2018/rewritten files/valid_file_'
 image_directory = '/home/mv01/Desktop/ISEF 2018/resized photos'
-MODEL_SAVE_PATH = '/home/mv01/Desktop/ISEF 2018'
+MODEL_SAVE_PATH = '/home/mv01/Desktop/ISEF 2018/train_cycle_5'
 
 #these save the data for each of the 10 folds
 fold_valid_accuracies = []
@@ -47,9 +47,9 @@ for i in range(1):
         
     loss_fn = my_loss
     
-    optimizer = torch.optim.SGD(net.parameters(), lr = INIT_LR, momentum = 0.9, weight_decay = WEIGHT_DECAY)
-    #optimizer = torch.optim.Adam(net.parameters(), lr = INIT_LR, weight_decay = WEIGHT_DECAY)
-    lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, LR_DROP_MILESTONES)
+    #optimizer = torch.optim.SGD(net.parameters(), lr = INIT_LR, momentum = 0.9, weight_decay = WEIGHT_DECAY)
+    optimizer = torch.optim.Adam(net.parameters(), lr = INIT_LR, weight_decay = WEIGHT_DECAY)
+    #lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, LR_DROP_MILESTONES)
     
     #for graphing
     train_losses = []
@@ -133,7 +133,7 @@ for i in range(1):
         total = 0
         
         with torch.no_grad():
-            for i, data in enumerate(valid_dataloader, 0):
+            for k, data in enumerate(valid_dataloader, 0):
                 images = data['image'].type(torch.FloatTensor)
                 mode = data['mode']
                 points = data['points']
@@ -146,7 +146,7 @@ for i in range(1):
                 _, predicted = torch.max(pred_classes, 1)
                 total += 1
                 correct += (predicted == mode).sum().item()
-                lots, MSE, cross_entropy = loss_fn(pred_classes, pred_direc, points, mode)
+                loss, MSE, cross_entropy = loss_fn(pred_classes, pred_direc, points, mode)
                 val_running_loss += loss
                 #val_performance_total += direction_performance(pred_direc, points)
                 val_mse_loss += MSE
@@ -167,25 +167,35 @@ for i in range(1):
                 plt.plot(train_losses)
                 plt.plot(valid_losses)
             
-            if epoch == 300:
-                torch.save(net.state_dict(), MODEL_SAVE_PATH + '_epoch_300_weights')
+            if epoch == 200:
+                torch.save(net.state_dict(), MODEL_SAVE_PATH + '_epoch_200_weights')
+                
+            if epoch == 400:
+                torch.save(net.state_dict(), MODEL_SAVE_PATH + '_epoch_400_weights')
+                
+            if epoch == 600:
+                torch.save(net.state_dict(), MODEL_SAVE_PATH + '_epoch_600_weights')
+                
+            if epoch == 800:
+                torch.save(net.state_dict(), MODEL_SAVE_PATH + '_epoch_800_weights')
     
     #Plot graphs of valid and train
     plt.title('train vs validation loss')
     plt.plot(valid_losses)
     plt.plot(train_losses)
-    plt.savefig('/home/mv01/Desktop/ISEF 2018/train_val_loss')
+    plt.savefig(MODEL_SAVE_PATH + 'losses')
     plt.show()
     plt.title('difference in mse and cross-entropy')
     plt.plot(train_losses_MSE)
     plt.plot(train_losses_cross_entropy)
-    plt.savefig('/home/mv01/Desktop/ISEF 2018/mse_ce')
+    plt.savefig(MODEL_SAVE_PATH + 'mse_ce')
     plt.show()
     plt.title('train vs validation accuracies')
     plt.plot(valid_accuracies)
     plt.plot(train_accuracies)
-    plt.savefig('/home/mv01/Desktop/ISEF 2018/train_val_accuracy')
+    plt.savefig(MODEL_SAVE_PATH + 'accuracies')
     plt.show()
+    plt.title('validation cross entropy')
     #plt.plot(valid_performances)
     #plt.show()
     
@@ -194,7 +204,7 @@ for i in range(1):
     #fold_valid_performances.append(valid_performances)
     fold_valid_losses.append(valid_losses)
     
-    torch.save(net.state_dict(), MODEL_SAVE_PATH + str(i)) #save the model weights
+    torch.save(net.state_dict(), MODEL_SAVE_PATH + '_final_weights') #save the model weights
     
     
 #graph the data from each fold

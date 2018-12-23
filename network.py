@@ -97,9 +97,11 @@ class MyNet(nn.Module):
 
         # classifier for lights
         self.classifier_light = nn.Sequential(
-            nn.Dropout(0.4),
-            nn.Linear(self.last_channel, 300),
-            nn.Linear(300, 6),
+            nn.Dropout(0.5),
+            nn.Linear(self.last_channel, 200),
+            nn.BatchNorm1d(200),
+            nn.ReLU(),
+            nn.Linear(200, 6),
             nn.Softmax()
         )
         
@@ -107,8 +109,12 @@ class MyNet(nn.Module):
         self.regression_direction = nn.Sequential(
             nn.Dropout(0.3),
             nn.Linear(self.last_channel, 320),
+            nn.BatchNorm1d(320),
+            nn.ReLU(),
             nn.Dropout(0.3),
             nn.Linear(320,80),
+            nn.BatchNorm1d(80),
+            nn.ReLU(),
             nn.Linear(80,4),
         )
         
