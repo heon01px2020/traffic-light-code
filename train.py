@@ -10,6 +10,7 @@ from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 from network import MyNet
 from dataset import TrafficLightDataset
+from dataset_valid import ValidDataset
 from loss import my_loss
 #from helpers import direction_performance
 
@@ -19,11 +20,11 @@ BATCH_SIZE = 32
 MAX_EPOCHS = 400
 INIT_LR = 0.001
 WEIGHT_DECAY = 0.00005
-LR_DROP_MILESTONES = [100,300,500,700,900]
+LR_DROP_MILESTONES = [200]
 train_file_root = '/home/mv01/Desktop/ISEF 2018/rewritten files/train_file_'
 valid_file_root = '/home/mv01/Desktop/ISEF 2018/rewritten files/valid_file_'
 image_directory = '/home/mv01/Desktop/ISEF 2018/resized photos'
-MODEL_SAVE_PATH = '/home/mv01/Desktop/ISEF 2018/train_cycle_5'
+MODEL_SAVE_PATH = '/home/mv01/Desktop/ISEF 2018/train_cycle_6'
 
 #these save the data for each of the 10 folds
 fold_valid_accuracies = []
@@ -36,7 +37,7 @@ for i in range(1):
     train_file_loc = train_file_root + str(i+1) + '.csv'
     train_dataset = TrafficLightDataset(csv_file = train_file_loc, root_dir = image_directory)
     valid_file_loc = valid_file_root + str(i+1) + '.csv'
-    valid_dataset = TrafficLightDataset(csv_file = valid_file_loc, root_dir = image_directory)
+    valid_dataset = ValidDataset(csv_file = valid_file_loc, root_dir = image_directory)
     
     train_dataloader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=8)
     valid_dataloader = DataLoader(valid_dataset, batch_size=1, shuffle=False, num_workers=2)
@@ -49,13 +50,15 @@ for i in range(1):
     
     #optimizer = torch.optim.SGD(net.parameters(), lr = INIT_LR, momentum = 0.9, weight_decay = WEIGHT_DECAY)
     optimizer = torch.optim.Adam(net.parameters(), lr = INIT_LR, weight_decay = WEIGHT_DECAY)
-    #lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, LR_DROP_MILESTONES)
+    lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, LR_DROP_MILESTONES)
     
     #for graphing
     train_losses = []
     train_losses_MSE = []
     train_losses_cross_entropy = []
     valid_losses = []
+    valid_losses_MSE  =[]
+    valid_losses_cross_entropy = []
     train_accuracies = []
     valid_accuracies = []
     #valid_performances = []
@@ -159,13 +162,16 @@ for i in range(1):
             print("average validation mse loss: " + str(val_mse_loss/total))
             print("average validation cross-entropy loss: " + str(val_ce_loss/total))
             valid_losses.append(val_running_loss/total)
+            valid_losses_MSE.append(val_mse_loss/total)
+            valid_losses_cross_entropy.append(val_ce_loss/total)
             #print("average direction performance: " +str(val_performance_total/total))
             #valid_performances.append(val_performance_total/total)
-            
+
             if epoch%100 == 99:
                 plt.title('train and validation loss')
                 plt.plot(train_losses)
                 plt.plot(valid_losses)
+                plt.show()
             
             if epoch == 200:
                 torch.save(net.state_dict(), MODEL_SAVE_PATH + '_epoch_200_weights')
@@ -195,7 +201,16 @@ for i in range(1):
     plt.plot(train_accuracies)
     plt.savefig(MODEL_SAVE_PATH + 'accuracies')
     plt.show()
-    plt.title('validation cross entropy')
+    plt.title('train and valid cross entropy')
+    plt.plot(train_losses_cross_entropy)
+    plt.plot(valid_losses_cross_entropy)
+    plt.savefig(MODEL_SAVE_PATH + 'train_valid_ce')
+    plt.show()
+    plt.title('train and valid MSE')
+    plt.plot(train_losses_MSE)
+    plt.plot(valid_losses_MSE)
+    plt.savefig(MODEL_SAVE_PATH + 'train_valid_MSE')
+    plt.show()
     #plt.plot(valid_performances)
     #plt.show()
     

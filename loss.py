@@ -13,5 +13,5 @@ def my_loss(classifier, regression, points, mode):
     #probably need to divide MSE by the width of the photo
     cross_entropy = nn.CrossEntropyLoss()
     ce = cross_entropy(classifier, mode)
-    loss = ce*0.9 + MSEl*0.1
+    loss = ce*0.5 + MSEl*0.5
     return loss, MSEl, ce
