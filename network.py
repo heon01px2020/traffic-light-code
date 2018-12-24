@@ -111,11 +111,11 @@ class MyNet(nn.Module):
             nn.Linear(self.last_channel, 320),
             nn.BatchNorm1d(320),
             nn.ReLU(),
-            nn.Dropout(0.1),
-            nn.Linear(320,80),
-            nn.BatchNorm1d(80),
-            nn.ReLU(),
-            nn.Linear(80,4),
+            #nn.Dropout(0.1),
+            #nn.Linear(320,80),
+            #nn.BatchNorm1d(80),
+            #nn.ReLU(),
+            nn.Linear(320,4),
         )
         
         self._initialize_weights()
@@ -132,13 +132,16 @@ class MyNet(nn.Module):
             if isinstance(m, nn.Conv2d):
                 #n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
                 #m.weight.data.normal_(0, math.sqrt(2. / n))
-                #if m.bias is not None:
-                    #m.bias.data.zero_()
+                if m.bias is not None:
+                    m.bias.data.zero_()
                 nn.init.xavier_normal(m.weight.data)
-            #elif isinstance(m, nn.BatchNorm2d):
-                #m.weight.data.fill_(1)
-                #m.bias.data.zero_(
-            #elif isinstance(m, nn.Linear):
-                #n = m.weight.size(1)
-                #m.weight.data.normal_(0, 0.01)
-                #m.bias.data.zero_()
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
+            elif isinstance(m, nn.BatchNorm1d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
+            elif isinstance(m, nn.Linear):
+                n = m.weight.size(1)
+                m.weight.data.normal_(0, 0.01)
+                m.bias.data.zero_()
