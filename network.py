@@ -1,5 +1,4 @@
 import torch.nn as nn
-import math
 
 def conv_bn(inp, oup, stride):
     return nn.Sequential(
@@ -58,7 +57,7 @@ class InvertedResidual(nn.Module):
             return self.conv(x)
 
 class MyNet(nn.Module):
-    def __init__(self, n_class=6, input_size_x = 768, input_size_y = 576, width_mult=1.):
+    def __init__(self, n_class=6, input_size_x = 512, input_size_y = 384, width_mult=1.):
         super(MyNet, self).__init__()
         block = InvertedResidual
         input_channel = 32
@@ -75,8 +74,8 @@ class MyNet(nn.Module):
         ]
 
         # building first layer
-        assert input_size_x % 96 == 0
-        assert input_size_y % 96 == 0
+        assert input_size_x % 64 == 0
+        assert input_size_y % 64 == 0
         input_channel = int(input_channel * width_mult)
         self.last_channel = int(last_channel * width_mult) if width_mult > 1.0 else last_channel
         self.features = [conv_bn(3, input_channel, 2)]
@@ -97,7 +96,7 @@ class MyNet(nn.Module):
 
         # classifier for lights
         self.classifier_light = nn.Sequential(
-            nn.Dropout(0.1),
+            nn.Dropout(0.2),
             nn.Linear(self.last_channel, 200),
             nn.BatchNorm1d(200),
             nn.ReLU(),
@@ -107,7 +106,7 @@ class MyNet(nn.Module):
         
         # regression for direction
         self.regression_direction = nn.Sequential(
-            nn.Dropout(0.1),
+            nn.Dropout(0.2),
             nn.Linear(self.last_channel, 320),
             nn.BatchNorm1d(320),
             nn.ReLU(),

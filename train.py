@@ -1,8 +1,6 @@
 ##################################################################################################
-#Things to add:
-#More Data Analysis such as recall and precision
+#Things to add
 #Data Analysis for direction; show the performance for when the zebra crossing is blocked vs unblocked
-#IM SURE I FORGOT QUITE A LOT OF OTHER STUFF LMAO
 ##################################################################################################
 
 import torch
@@ -17,15 +15,15 @@ from helpers import direction_performance
 cuda_available = torch.cuda.is_available()
 
 BATCH_SIZE = 32
-MAX_EPOCHS = 300
+MAX_EPOCHS = 400
 INIT_LR = 0.001
-WEIGHT_DECAY = 0.0005
-LR_DROP_MILESTONES = [200]
-train_file_root = '/home/mv01/Desktop/ISEF 2018/5-fold files/train_file_'
-valid_file_root = '/home/mv01/Desktop/ISEF 2018/5-fold files/valid_file_'
-image_directory = '/home/mv01/Desktop/ISEF 2018/resized photos'
-MODEL_SAVE_PATH = '/home/mv01/Desktop/ISEF 2018/train_cycle_9'
-
+WEIGHT_DECAY = 0.00005
+LR_DROP_MILESTONES = [150,300,450,550]
+train_file_root = '/home/mv01/Desktop/ISEF 2018/new 5-fold files/train_file_'
+valid_file_root = '/home/mv01/Desktop/ISEF 2018/new 5-fold files/valid_file_'
+image_directory = '/home/mv01/Desktop/ISEF 2018/resized_photos_512_384'
+MODEL_SAVE_PATH = '/home/mv01/Desktop/ISEF 2018/train_cycle_14'
+WEIGHT_LOAD_PATH = '/home/mv01/Desktop/ISEF 2018/train_cycle_14_epoch_50_weights2'
 #these save the data for each of the 10 folds
 fold_valid_accuracies = []
 fold_valid_losses = []
@@ -34,7 +32,7 @@ fold_valid_start = []
 fold_valid_end = []
 
 #10-fold cross validation
-for i in range(5):
+for i in range(3,4):
     
     train_file_loc = train_file_root + str(i+1) + '.csv'
     train_dataset = TrafficLightDataset(csv_file = train_file_loc, root_dir = image_directory)
@@ -45,15 +43,20 @@ for i in range(5):
     valid_dataloader = DataLoader(valid_dataset, batch_size=1, shuffle=False, num_workers=2)
     
     net = MyNet()
+    
+    #checkpoint = torch.load(WEIGHT_LOAD_PATH)
+    #net.load_state_dict(checkpoint['state_dict'])
     if cuda_available:
         net = net.cuda()
     
-    net.load_state_dict(torch.load('/home/mv01/Desktop/ISEF 2018/graphs and weights/train_cycle_8_epoch_50_weights2'))
     
     loss_fn = my_loss
     
-    optimizer = torch.optim.SGD(net.parameters(), lr = INIT_LR, momentum = 0.9, weight_decay = WEIGHT_DECAY)
-    #optimizer = torch.optim.Adam(net.parameters(), lr = INIT_LR, weight_decay = WEIGHT_DECAY)
+    #optimizer = torch.optim.SGD(net.parameters(), lr = INIT_LR, momentum = 0.9, weight_decay = WEIGHT_DECAY)
+    
+    optimizer = torch.optim.Adam(net.parameters(), lr = INIT_LR, weight_decay = WEIGHT_DECAY)
+    #optimizer.load_state_dict(checkpoint['optimizer'])
+    #epoch_ = checkpoint['epoch']
     lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, LR_DROP_MILESTONES)
     
     #for graphing
@@ -116,8 +119,8 @@ for i in range(5):
             running_loss_cross_entropy += cross_entropy
             
 
-            if j % 72 == 71:
-                print('[%d, %5d] loss: %.3f' % (epoch + 1, (j + 1)*32, running_loss /81))
+            if j % 108 == 107:
+                print('[%d, %5d] loss: %.3f' % (epoch + 1, (j + 1)*32, running_loss /108))
                 print('mse: ' + str(running_loss_MSE/(j+1)))
                 print('cross_entropy: ' + str(running_loss_cross_entropy/(j+1)))
                 print("accuracy: " + str(train_correct/train_total/32))
@@ -258,8 +261,21 @@ for i in range(5):
                 plt.show()
             
             
-            if epoch == 100:
-                torch.save(net.state_dict(), MODEL_SAVE_PATH + '_epoch_100_weights' + str(i+1))
+            if epoch == 50:
+                states = {
+                        'epoch': epoch+1,
+                        'state_dict': net.state_dict(),
+                        'optimizer': optimizer.state_dict()
+                        }
+                torch.save(states, MODEL_SAVE_PATH + '_epoch_50_weights' + str(i+1))
+            if epoch%200 == 199:
+                states = {
+                        'epoch': epoch+1,
+                        'state_dict': net.state_dict(),
+                        'optimizer': optimizer.state_dict()
+                        }
+                torch.save(states, MODEL_SAVE_PATH + '_epoch_' + str(epoch+1) + '_weights' + str(i+1))
+                
 
     #Plot graphs of valid and train
     plt.title('train vs validation loss')
@@ -290,8 +306,12 @@ for i in range(5):
     fold_valid_end.append(val_end)
     fold_valid_losses.append(valid_losses)
     
-    torch.save(net.state_dict(), MODEL_SAVE_PATH + '_final_weights' + str(i+1)) #save the model weights
-    
+    states = {
+            'epoch': epoch+1,
+            'state_dict': net.state_dict(),
+            'optimizer': optimizer.state_dict()
+            }
+    torch.save(states, MODEL_SAVE_PATH + 'final_weights' + str(i+1))
     
 #graph the data from each fold
 #accuracy
